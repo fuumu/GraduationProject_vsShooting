@@ -14,14 +14,17 @@ SingleMode::SingleMode(SceneManager *p) : SceneBase(p)
 
     randomSeed(analogRead(0)); // エネミーのランダム移動用　0番ピンのノイズで乱数を初期化
 
+    // ゲームの状態を初期化
+
     m_gameState = STATE_COUNTDOWN;
-    m_countDown = 3;
-    m_timer = 0;
+
+    // カウントダウンの音を鳴らすためにあえて4秒から開始
+    m_countDown = 3 + 1;
+    m_timer = 60;
+
     m_score = 0;
     m_p1Life = 2;
     m_p1death = false;
-
-
 
     // プレイヤーとエネミー生成
     m_objManager.addObj(new Player({0, SCREEN_HEIGHT / 2 - 5}, PLAYER1, &m_objManager));
@@ -46,6 +49,16 @@ int SingleMode::update()
             else
             {
                 m_countDown--;
+                if (m_countDown == 0)
+                {
+                    // カウントダウン終了
+                    sound.playSound(SOUND_COUNTDOWN_END);
+                }
+                else
+                {
+                    // カウントダウン
+                    sound.playSound(SOUND_COUNTDOWN_TICK);
+                }
             }
             m_timer = 0;
         }
@@ -83,6 +96,8 @@ int SingleMode::update()
         {
             // 結果画面へ
             m_gameState = STATE_RESULT;
+            // ゲームオーバーBGM
+            sound.playSound(SOUND_LOSS);
         }
         break;
     // 結果画面

@@ -6,6 +6,13 @@ enum SoundType {
   SOUND_STARTUP,//スタート音
   SOUND_AHO,//
   SOUND_BEEP,//ビープ音
+  SOUND_LOSS,//ショパンの悲しいやつ
+  SOUND_COUNTDOWN_TICK,//カウントダウン
+  SOUND_COUNTDOWN_END,//カウントダウン終了
+  SOUND_SHOT,//弾を撃つ
+  SOUND_CURSOR_MOVE,//カーソル移動音
+  SOUND_POWER_UP,//パワーアップ音
+  SOUND_DAMAGE,//ダメージ音
 };
 
 class SoundManager {

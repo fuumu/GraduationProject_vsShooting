@@ -24,9 +24,15 @@ VersusMode::VersusMode(SceneManager *p) : SceneBase(p)
     m_isMatched = false;
 
     // ゲームの状態を初期化
-    m_countDown = 3;
-    m_timer = 0;
+
     m_gameState = STATE_WAITING_FOR_OPPONENT;
+    
+    //カウントダウンの音を鳴らすためにあえて4秒から開始
+    m_countDown = 3+1;
+    m_timer = 60;
+
+    m_p1Life = 2;
+    m_p2Life = 2;
     m_p1win = false;
     m_p2win = false;
 
@@ -61,6 +67,16 @@ int VersusMode::update()
             else
             {
                 m_countDown--;
+                if(m_countDown == 0)
+                {
+                    //カウントダウン終了
+                    sound.playSound(SOUND_COUNTDOWN_END);
+                }
+                else
+                {
+                    //カウントダウン
+                    sound.playSound(SOUND_COUNTDOWN_TICK);
+                }
             }
             m_timer = 0;
         }
@@ -103,6 +119,15 @@ int VersusMode::update()
             // 結果画面へ
             m_gameState = STATE_RESULT;
             wsClient->disconnect();
+            if(m_p1win)
+            {
+
+            }
+            else
+            {
+                //敗北BGM
+                sound.playSound(SOUND_LOSS);
+            }
         }
         break;
     // 結果画面

@@ -106,6 +106,8 @@ void Player::action()
     {
         m_bulletCount++;
         m_powerUpTimer = 0;
+        //パワーアップ音
+        sound.playSound(SOUND_POWER_UP);
     }
 
     // 画面外に出ないように制限
@@ -147,6 +149,8 @@ void Player::action()
         else
         {
             m_life--;
+            //ダメージ音
+            sound.playSound(SOUND_DAMAGE);
         }
     }
 }
