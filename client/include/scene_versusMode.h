@@ -35,6 +35,9 @@ private:
     };
     GameState m_gameState;
 
+    //待機中のBGMの重複再生を防ぐためのフラグ
+    bool m_isBgmPlaying = false;
+
     // ゲーム開始前のカウントダウン用
     uint8_t m_timer = 0;
     uint8_t m_countDown = 3;
@@ -42,7 +45,7 @@ private:
 
     // --- ゲームオブジェクト関連 ---
     // オブジェクトマネージャー
-    ObjManager objManager;
+    ObjManager m_objManager;
 
 
     // --- プレイヤー情報・勝敗関連 ---
@@ -53,6 +56,9 @@ private:
     // 勝敗フラグ
     bool m_p1win = false;
     bool m_p2win = false;
+
+    //星生成用タイマー
+    uint8_t m_starGenTimer = 0;
 
 
 public:

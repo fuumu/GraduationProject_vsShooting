@@ -7,7 +7,7 @@
 
 Title::Title(SceneManager *p) : SceneBase(p)
 {
-    
+    sound.playSound(SOUND_STARTUP);
 }
 
 int Title::update()
@@ -16,14 +16,31 @@ int Title::update()
     if (m_timer < LOGO_DURATION)
     {
         m_timer++;
+        //メニューを表示する瞬間に効果音を鳴らす
+        if(m_timer == LOGO_DURATION)
+        {
+            sound.playSound(SOUND_SHOW);
+        }
     }
     else
     {
         // スティックでモードを選択
         if (800 < analogRead(STICK_Y))
-            m_vsmode = true;
-        if (400 > analogRead(STICK_Y))
-            m_vsmode = false;
+        {
+            if (m_vsmode == false)
+            {
+                m_vsmode = true;
+                sound.playSound(SOUND_CURSOR_MOVE);
+            }
+        }
+        else if (400 > analogRead(STICK_Y))
+        {
+            if (m_vsmode == true)
+            {
+                m_vsmode = false;
+                sound.playSound(SOUND_CURSOR_MOVE);
+            }
+        }
 
         // ボタンが押されたら選択中のモードで開始
         if (digitalRead(BUTTON_A) == HIGH)

@@ -96,6 +96,7 @@ void Player::action()
             m_ptr_objManager->addObj(new Bullet({m_pos.x + m_width / 2, m_pos.y + m_height / 2}, dir, bulletId));
         }
 
+        sound.playSound(SOUND_SHOT);
         m_firetimer = 0;
     }
 
@@ -105,6 +106,8 @@ void Player::action()
     {
         m_bulletCount++;
         m_powerUpTimer = 0;
+        //パワーアップ音
+        sound.playSound(SOUND_POWER_UP);
     }
 
     // 画面外に出ないように制限
@@ -146,6 +149,8 @@ void Player::action()
         else
         {
             m_life--;
+            //ダメージ音
+            sound.playSound(SOUND_DAMAGE);
         }
     }
 }
