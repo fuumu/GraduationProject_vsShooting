@@ -2,25 +2,50 @@
 
 SoundManager::SoundManager()
     : buzzerPin(-1), currentMelody(nullptr), currentDurations(nullptr),
-      melodyLength(0), currentNote(0), noteStartTime(0), noteDuration(0) {}
+      melodyLength(0), currentNote(0), noteStartTime(0), noteDuration(0),
+       currentSoundType(SOUND_NONE),loopPlayback(false) {}
 
 void SoundManager::begin(int pin)
 {
   buzzerPin = pin;
 }
 
-void SoundManager::playSound(SoundType type)
+void SoundManager::playSound(SoundType type, bool loop)
 {
+  //enumを元に優先順位が低いサウンドは無視する
+  if(currentMelody != nullptr && currentSoundType != SOUND_NONE)
+  {
+    if(type > currentSoundType)
+    {
+      return;
+    }
+  }
+
   setMelody(type);
   currentNote = 0;
   noteStartTime = millis();
+  loopPlayback = loop;
+}
+
+void SoundManager::stopSound()
+{
+  noTone(buzzerPin);
+  currentMelody = nullptr;
+  currentDurations = nullptr;
+  melodyLength = 0;
+  currentNote = 0;
+  noteDuration = 0;
+  currentSoundType = SOUND_NONE;
+  loopPlayback = false;
 }
 
 void SoundManager::update()
 {
   // nullptrなら何もしない
   if (currentMelody == nullptr || currentDurations == nullptr)
+  {
     return;
+  }
 
   unsigned long now = millis();
 
@@ -52,13 +77,23 @@ void SoundManager::update()
   // 再生終了（最後の noteDuration 経過後に止める）
   else if (now - noteStartTime >= noteDuration)
   {
-    noTone(buzzerPin);
-    currentMelody = nullptr;
+    if (loopPlayback)
+    {
+      currentNote = 0;
+      noteStartTime = now;
+    }
+    else
+    {
+      stopSound();
+    }
   }
 }
 
 void SoundManager::setMelody(SoundType type)
 {
+  //サウンドタイプを保存
+  currentSoundType = type;
+
   // 再生するサウンドの設定
   switch (type)
   {
@@ -66,35 +101,24 @@ void SoundManager::setMelody(SoundType type)
   case SOUND_STARTUP:
   {
     static int melody[] = {NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4};
-    static int durations[] = {4, 8, 8, 4, 4, 4, 4, 4};
+    static int durations[] = {8, 16, 16, 8, 8, 8, 8, 8};
 
     currentMelody = melody;
     currentDurations = durations;
     melodyLength = sizeof(melody) / sizeof(melody[0]);
     break;
   }
-  case SOUND_AHO:
+  case SOUND_SHOW:
   {
-    static int melody[] = {NOTE_A1, NOTE_A2};
-    static int durations[] = {4, 4};
+    static int melody[] = {NOTE_G5, NOTE_C6 , NOTE_E6};
+    static int durations[] = {16, 16, 16};
 
     currentMelody = melody;
     currentDurations = durations;
     melodyLength = sizeof(melody) / sizeof(melody[0]);
     break;
   }
-  // ビープ音
-  case SOUND_BEEP:
-  {
-    static int melody[] = {NOTE_C3};
-    static int durations[] = {16};
-
-    currentMelody = melody;
-    currentDurations = durations;
-    melodyLength = sizeof(melody) / sizeof(melody[0]);
-    break;
-  }
-  // ショパンの悲しいやつ
+  // ショパン
   case SOUND_LOSS:
   {
     static int melody[] = {
@@ -105,6 +129,41 @@ void SoundManager::setMelody(SoundType type)
         2, 2, 8, 2,
         2, 8, 2, 8,
         2, 8, 2};
+
+    currentMelody = melody;
+    currentDurations = durations;
+    melodyLength = sizeof(melody) / sizeof(melody[0]);
+    break;
+  }
+  // 表彰式
+  case SOUND_WIN:
+  {
+    static int melody[] = {
+        NOTE_C5, NOTE_A4, NOTE_AS4, NOTE_C5, NOTE_F4, 
+        NOTE_G4, NOTE_A4, NOTE_AS4, NOTE_C5, NOTE_AS4, NOTE_A4, NOTE_G4,};
+    static int durations[] = {
+        2, 2, 8, 2, 2, 
+        8, 8, 8, 8, 4, 4, 1,};
+
+    currentMelody = melody;
+    currentDurations = durations;
+    melodyLength = sizeof(melody) / sizeof(melody[0]);
+    break;
+  }
+  //保留音
+  case SOUND_WAIT:
+  {
+    static int melody[] = {
+        NOTE_GS5, NOTE_B4, NOTE_GS5, NOTE_FS5, NOTE_E5, NOTE_DS5, NOTE_E5, NOTE_A5, NOTE_A5, NOTE_A5, NOTE_B4,
+        NOTE_GS5, NOTE_C5, NOTE_GS5, NOTE_FS5, NOTE_E5, NOTE_DS5, NOTE_E5, NOTE_FS5, NOTE_FS5, NOTE_FS5, NOTE_REST, NOTE_G5,
+        NOTE_GS5, NOTE_B4, NOTE_GS5, NOTE_FS5, NOTE_E5, NOTE_DS5, NOTE_E5, NOTE_CS6, NOTE_CS6, NOTE_CS6,
+        NOTE_B5, NOTE_A5, NOTE_GS5, NOTE_FS5, NOTE_E5, NOTE_CS5, NOTE_DS5, NOTE_E5, NOTE_REST};
+    
+    static int durations[] = {
+        2, 4, 4, 4, 4, 4, 4, 2, 2, 2, 2,
+        2, 4, 4, 4, 4, 4, 4, 2, 2, 2, 4, 4,
+        2, 4, 4, 4, 4, 4, 4, 2, 2, 2,
+        4, 4, 2, 4, 4, 2, 2, 1, 2,};
 
     currentMelody = melody;
     currentDurations = durations;
@@ -175,6 +234,35 @@ void SoundManager::setMelody(SoundType type)
     currentMelody = melody;
     currentDurations = durations;
     melodyLength = sizeof(melody) / sizeof(melody[0]);
+    break;
+  }
+  // エラー音
+  case SOUND_ERROR:
+  {
+    static int melody[] = {NOTE_E2,NOTE_DS2,NOTE_D2,NOTE_CS2,NOTE_C2};
+    static int durations[] = {16,16,16,16,16};
+
+    currentMelody = melody;
+    currentDurations = durations;
+    melodyLength = sizeof(melody) / sizeof(melody[0]);
+    break;
+  }
+  // ビープ音
+  case SOUND_BEEP:
+  {
+    static int melody[] = {NOTE_C3};
+    static int durations[] = {16};
+
+    currentMelody = melody;
+    currentDurations = durations;
+    melodyLength = sizeof(melody) / sizeof(melody[0]);
+    break;
+  }
+  case SOUND_NONE:
+  {
+    currentMelody = nullptr;
+    currentDurations = nullptr;
+    melodyLength = 0;
     break;
   }
   default:

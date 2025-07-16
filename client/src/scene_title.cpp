@@ -16,6 +16,11 @@ int Title::update()
     if (m_timer < LOGO_DURATION)
     {
         m_timer++;
+        //メニューを表示する瞬間に効果音を鳴らす
+        if(m_timer == LOGO_DURATION)
+        {
+            sound.playSound(SOUND_SHOW);
+        }
     }
     else
     {

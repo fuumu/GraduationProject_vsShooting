@@ -46,6 +46,7 @@ enum ObjID
     ENEMY,
     P1BULLET,
     P2BULLET,
+	EFFECT,
   };
 enum GameResult
 {

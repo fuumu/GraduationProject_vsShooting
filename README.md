@@ -48,6 +48,7 @@
 - 通信を<ins>**バイナリ形式**</ins>で行うことで**データ量を大幅に削減**し、さらにゲームの更新処理に<ins>**タイマー割り込み**</ins>を用いることで**高いリアルタイム性**を確保  
 - **フラッシュメモリの<ins>仮想的なEEPROM領域**</ins>を活用し、**ハイスコアの永続保存**を実現
 - ディスプレイには**OLED**を採用し、**高い視認性**を実現
+- パッシブブザーを使用することで**PWM制御による多彩なトーン**を生成し、**ゲームの抑揚や没入感を増幅**
 - 入力装置は**アナログスティック１つ＋ボタン一つ**の**シンプルな入力設計**
 
 <ins>*WebSocketを導入するにあたり使用できるライブラリが存在しなかったので自前でWebSocketClientクラスを実装*</ins>
@@ -64,9 +65,13 @@
 | ディスプレイ（OLEDなど）        | 1個 | I2C接続が可能なもの        |
 | アナログスティック             | 1個 | 操作に使用　スイッチは未使用   |
 | タクトスイッチ（ボタン）          | 1個 | 入力用          |
+| パッシブブザー         | 1個 | サウンド再生に使用            |
+| ポテンショメータ          | 1個 | ボリューム調整に使用          |
+| S8050NPNトランジスタ          | 1個 | パッシブブザーを鳴らすために必要          |
 | 抵抗 10kΩ               | 1個 | プルダウンに使用 |
+| 抵抗 1kΩ               | 1個 | 電流制限用 |
 | セラミックコンデンサ 104（0.1µF） | 1個 | ジッター排除に使用  |
-| ジャンパワイヤ | 約15個 | ブレッドボード図のワイヤー分＋スコアリセット用  |
+| ジャンパワイヤ | 約20個 | ブレッドボード図のワイヤー分＋スコアリセット用  |
 
 ---
 
@@ -101,45 +106,54 @@
 
 ```txt
 client/
- ├───.gitignore
- ├───platformio.ini
- ├───.pio/...
- ├───.vscode/
- │   ├───extensions.json
- │   └───settings.json
- ├───config/
- │   └───arduino_secrets.h
- ├───include/
- │   ├───bullet.h
- │   ├───enemy.h
- │   ├───function.h
- │   ├───game.h
- │   ├───objBase.h
- │   ├───objManager.h
- │   ├───player.h
- │   ├───scene_singleMode.h
- │   ├───scene_title.h
- │   ├───scene_versusMode.h
- │   ├───sceneBase.h
- │   ├───sceneManager.h
- │   ├───types.h
- │   └───WebSocketClient.h
- ├───lib/
- │   └───README
- ├───src/
- │   ├───bullet.cpp
- │   ├───main.ino
- │   ├───enemy.cpp
- │   ├───function.cpp
- │   ├───game.cpp
- │   ├───objManager.cpp
- │   ├───player.cpp
- │   ├───scene_singleMode.cpp
- │   ├───scene_title.cpp
- │   ├───scene_versusMode.cpp
- │   └───WebSocketClient.cpp
- └───test/
-     └───README
+ ├── .gitignore
+ ├── platformio.ini
+ │
+ ├── .pio/
+ ├── .vscode/
+ │   ├── extensions.json
+ │   └── settings.json
+ │
+ ├── config/
+ │   └── arduino_secrets.h
+ │
+ ├── include/
+ │   ├── bullet.h
+ │   ├── effect.h
+ │   ├── enemy.h
+ │   ├── function.h
+ │   ├── objBase.h
+ │   ├── objManager.h
+ │   ├── pitches.h
+ │   ├── player.h
+ │   ├── scene_singleMode.h
+ │   ├── scene_title.h
+ │   ├── scene_versusMode.h
+ │   ├── sceneBase.h
+ │   ├── sceneManager.h
+ │   ├── soundManager.h
+ │   ├── types.h
+ │   └── WebSocketClient.h
+ │
+ ├── lib/
+ │   └── README
+ │
+ ├── src/
+ │   ├── bullet.cpp
+ │   ├── effect.cpp
+ │   ├── enemy.cpp
+ │   ├── function.cpp
+ │   ├── main.ino
+ │   ├── objManager.cpp
+ │   ├── player.cpp
+ │   ├── scene_singleMode.cpp
+ │   ├── scene_title.cpp
+ │   ├── scene_versusMode.cpp
+ │   ├── soundManager.cpp
+ │   └── WebSocketClient.cpp
+ │
+ └── test/
+     └── README
 ```
 
 ---
@@ -216,6 +230,12 @@ server/
 
 #### 手順
 
+※環境によってはnpmコマンドが使えない場合があります。そのときは以下のコマンドを入力して実行ポリシーを変更してください。
+
+``` bash
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
 1. **依存関係のインストール**
 
     - VSCodeで`server`フォルダを開き、ターミナルで以下のコマンドを実行して依存関係のインストールを行います。
@@ -231,7 +251,7 @@ server/
     - ターミナルで以下のコマンドを実行することでサーバーが起動します。
 
     ```bash
-    node server.js
+    npm start
     ```
 
 3. **サーバーの停止**
@@ -315,13 +335,14 @@ stateDiagram-v2
 - WebSocketによるJSON形式の通信スタックを自作して導入。その後、パフォーマンス改善のため**バイナリ形式**に変更し、**遅延を大幅に削減**
 - 当初のloop関数によるゲームの更新から、ゲームのリアルタイム性向上のため、**タイマー割り込み**でのゲームの更新に変更
 - ゲームオブジェクトや各シーンを**クラス化**し、**拡張性や再利用性を向上**
+- サウンドは列挙型で管理し、定義順をそのまま優先順位とすることで、重要性の高いサウンドを優先的に再生するように設計
 
 ## 今後の課題
 
-- BGMや効果音がないため、モジュールを駆使してサウンドを再生する仕組みを作る。
-- 最大４人で対戦できるようにする。
 - 現時点では単に弾を撃つだけなので、弾をすり抜けたり、シールドを張るといったスキルを追加してゲーム性を向上させる。
+- 最大４人で対戦できるようにする。
 - シューティングゲームだけではなく様々なゲームを遊べるようにする。
+- MP3再生に対応するモジュールを導入し、より柔軟かつ表現力の高いサウンドを再生できるようにする
 
 ## 本プロジェクトで使用しているツール・技術について
 

@@ -1,11 +1,14 @@
+#include <EEPROM.h>
+#include "function.h"
 #include "scene_singleMode.h"
 #include "sceneManager.h"
 #include "scene_title.h"
 #include "player.h"
 #include "enemy.h"
-#include <EEPROM.h>
+#include "effect.h"
 
 #define COUNTDOWN_DURATION 60
+#define STAR_GEN_DURATION 24
 
 SingleMode::SingleMode(SceneManager *p) : SceneBase(p)
 {
@@ -29,6 +32,20 @@ SingleMode::SingleMode(SceneManager *p) : SceneBase(p)
     // プレイヤーとエネミー生成
     m_objManager.addObj(new Player({0, SCREEN_HEIGHT / 2 - 5}, PLAYER1, &m_objManager));
     m_objManager.addObj(new Enemy(&m_objManager));
+
+    // あらかじめ画面にランダムに星を出しておく
+    for (int i = 0; i < 3; ++i)
+    {
+        // ランダムな位置に出現する（x, y ともにランダム）
+        float x = static_cast<float>(randRange(0, SCREEN_WIDTH));
+        float y = static_cast<float>(randRange(0, SCREEN_HEIGHT));
+        Pos pos{x, y};
+
+        // 左に流れていく
+        Vec vec{-1.0f, 0.0f};
+
+        m_objManager.addObj(new Effect(pos, vec));
+    }
 }
 
 int SingleMode::update()
@@ -69,6 +86,21 @@ int SingleMode::update()
         // プレイヤーが死ぬまで続ける
         if (!m_p1death)
         {
+            // 画面に星のエフェクトを生成
+            if (m_starGenTimer == STAR_GEN_DURATION)
+            {
+                //  ランダムな縦位置に出現する
+                float y = static_cast<float>(randRange(0, SCREEN_HEIGHT));
+                Pos pos{SCREEN_WIDTH, y};
+                // 左に流れていく
+                Vec vec{-1.0f, 0.0f};
+
+                m_objManager.addObj(new Effect(pos, vec));
+
+                m_starGenTimer = 0;
+            }
+            m_starGenTimer++;
+
             // オブジェクト更新
             m_objManager.updateObj();
 
@@ -111,6 +143,7 @@ int SingleMode::update()
                 m_hiscore = m_score;
                 EEPROM.write(EEPROM_ADDR_HISCORE, (byte)m_hiscore);
             }
+            sound.stopSound();
             sceneManager->deleteScene();
             sceneManager->currentScene = new Title(sceneManager);
         }

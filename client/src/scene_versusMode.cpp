@@ -1,10 +1,13 @@
 #include "../config/arduino_secrets.h"
+#include "function.h"
 #include "scene_versusMode.h"
 #include "sceneManager.h"
 #include "scene_title.h"
 #include "player.h"
+#include "effect.h"
 
 #define COUNTDOWN_DURATION 60
+#define STAR_GEN_DURATION 24
 
 VersusMode::VersusMode(SceneManager *p) : SceneBase(p)
 {
@@ -26,9 +29,11 @@ VersusMode::VersusMode(SceneManager *p) : SceneBase(p)
     // ゲームの状態を初期化
 
     m_gameState = STATE_WAITING_FOR_OPPONENT;
-    
-    //カウントダウンの音を鳴らすためにあえて4秒から開始
-    m_countDown = 3+1;
+
+    m_isBgmPlaying = false;
+
+    // カウントダウンの音を鳴らすためにあえて4秒から開始
+    m_countDown = 3 + 1;
     m_timer = 60;
 
     m_p1Life = 2;
@@ -37,8 +42,22 @@ VersusMode::VersusMode(SceneManager *p) : SceneBase(p)
     m_p2win = false;
 
     // プレイヤー生成
-    objManager.addObj(new Player({0, SCREEN_HEIGHT / 2 - 5}, PLAYER1, &objManager));                 // player1
-    objManager.addObj(new Player({SCREEN_WIDTH - 10, SCREEN_HEIGHT / 2 - 5}, PLAYER2, &objManager)); // player2
+    m_objManager.addObj(new Player({0, SCREEN_HEIGHT / 2 - 5}, PLAYER1, &m_objManager));                 // player1
+    m_objManager.addObj(new Player({SCREEN_WIDTH - 10, SCREEN_HEIGHT / 2 - 5}, PLAYER2, &m_objManager)); // player2
+
+    // あらかじめ画面にランダムに星を出しておく
+    for (int i = 0; i < 3; ++i)
+    {
+        // ランダムな位置に出現する（x, y ともにランダム）
+        float x = static_cast<float>(randRange(0, SCREEN_WIDTH));
+        float y = static_cast<float>(randRange(0, SCREEN_HEIGHT));
+        Pos pos{x, y};
+
+        // 左に流れていく
+        Vec vec{-1.0f, 0.0f};
+
+        m_objManager.addObj(new Effect(pos, vec));
+    }
 }
 
 int VersusMode::update()
@@ -48,9 +67,11 @@ int VersusMode::update()
     {
     // 対戦相手待機中
     case STATE_WAITING_FOR_OPPONENT:
+
         // 通信に成功したらカウントダウンへ
         if (m_isMatched)
         {
+            sound.stopSound();
             m_gameState = STATE_COUNTDOWN;
         }
         break;
@@ -67,14 +88,14 @@ int VersusMode::update()
             else
             {
                 m_countDown--;
-                if(m_countDown == 0)
+                if (m_countDown == 0)
                 {
-                    //カウントダウン終了
+                    // カウントダウン終了
                     sound.playSound(SOUND_COUNTDOWN_END);
                 }
                 else
                 {
-                    //カウントダウン
+                    // カウントダウン
                     sound.playSound(SOUND_COUNTDOWN_TICK);
                 }
             }
@@ -89,11 +110,26 @@ int VersusMode::update()
         // どちらかが死ぬまでゲームを更新
         if (!m_p1win && !m_p2win)
         {
+            // 画面に星のエフェクトを生成
+            if (m_starGenTimer == STAR_GEN_DURATION)
+            {
+                //  ランダムな縦位置に出現する
+                float y = static_cast<float>(randRange(0, SCREEN_HEIGHT));
+                Pos pos{SCREEN_WIDTH, y};
+                // 左に流れていく
+                Vec vec{-1.0f, 0.0f};
+
+                m_objManager.addObj(new Effect(pos, vec));
+
+                m_starGenTimer = 0;
+            }
+            m_starGenTimer++;
+
             // オブジェクト更新
-            objManager.updateObj();
+            m_objManager.updateObj();
 
             // オブジェクトクリーンアップ
-            objManager.cleanupObj();
+            m_objManager.cleanupObj();
 
             // 勝敗チェック用
             m_p1win = true;
@@ -101,15 +137,15 @@ int VersusMode::update()
             // 画面上に表示する残機更新と勝敗チェック
             for (int i = 0; i < MAX_OBJ; i++)
             {
-                if (objManager.getObjPtr(i) != nullptr && objManager.getObjPtr(i)->m_id == PLAYER1)
+                if (m_objManager.getObjPtr(i) != nullptr && m_objManager.getObjPtr(i)->m_id == PLAYER1)
                 {
-                    m_p1Life = ((Player *)objManager.getObjPtr(i))->get_life();
+                    m_p1Life = ((Player *)m_objManager.getObjPtr(i))->get_life();
                     m_p2win = false;
                 }
 
-                if (objManager.getObjPtr(i) != nullptr && objManager.getObjPtr(i)->m_id == PLAYER2)
+                if (m_objManager.getObjPtr(i) != nullptr && m_objManager.getObjPtr(i)->m_id == PLAYER2)
                 {
-                    m_p2Life = ((Player *)objManager.getObjPtr(i))->get_life();
+                    m_p2Life = ((Player *)m_objManager.getObjPtr(i))->get_life();
                     m_p1win = false;
                 }
             }
@@ -119,13 +155,15 @@ int VersusMode::update()
             // 結果画面へ
             m_gameState = STATE_RESULT;
             wsClient->disconnect();
-            if(m_p1win)
+            m_shouldCommunicate = false;
+            if (m_p1win)
             {
-
+                // 勝利BGM
+                sound.playSound(SOUND_WIN);
             }
             else
             {
-                //敗北BGM
+                // 敗北BGM
                 sound.playSound(SOUND_LOSS);
             }
         }
@@ -135,6 +173,7 @@ int VersusMode::update()
         // タイトルに戻る
         if (digitalRead(BUTTON_A) == HIGH)
         {
+            sound.stopSound();
             sceneManager->deleteScene();
             sceneManager->currentScene = new Title(sceneManager);
         }
@@ -178,7 +217,7 @@ void VersusMode::draw()
             display.drawPixel(SCREEN_WIDTH / 2, y, WHITE); // 縦に1ピクセルずつ線を描画
         }
         // オブジェクト描画
-        objManager.drawObj();
+        m_objManager.drawObj();
 
         display.setTextSize(1);                       // 文字サイズ（1が基本サイズ）
         display.setCursor(0, 0);                      //(x, y) = (0, 0) は1行目の左端
@@ -215,7 +254,6 @@ void VersusMode::communicate()
     // 通信が無効化されている場合は何もしない
     if (!m_shouldCommunicate)
     {
-
         return;
     }
 
@@ -283,6 +321,12 @@ void VersusMode::communicate()
                 // サーバーにつながったらループから抜ける
                 if (wsClient->connectToServer())
                 {
+                    if (!m_isBgmPlaying)
+                    {
+                        // 待機中BGMをループ再生
+                        sound.playSound(SOUND_WAIT, true);
+                        m_isBgmPlaying = true;
+                    }
                     retryCount = 0;
                     break;
                 }
@@ -341,7 +385,7 @@ void VersusMode::sendPlayer1Data()
 {
     for (int i = 0; i < MAX_OBJ; i++)
     {
-        ObjBase *ptr_obj = objManager.getObjPtr(i);
+        ObjBase *ptr_obj = m_objManager.getObjPtr(i);
         if (ptr_obj != nullptr && ptr_obj->m_id == PLAYER1)
         {
             Serial.println("送信します");
@@ -356,7 +400,7 @@ void VersusMode::receivePlayer2Data()
 {
     for (int i = 0; i < MAX_OBJ; i++)
     {
-        ObjBase *ptr_obj = objManager.getObjPtr(i);
+        ObjBase *ptr_obj = m_objManager.getObjPtr(i);
         if (ptr_obj != nullptr && ptr_obj->m_id == PLAYER2)
         {
             uint8_t x, y, life;

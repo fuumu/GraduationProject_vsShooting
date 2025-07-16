@@ -18,7 +18,6 @@ private:
     uint8_t m_timer = 0;
     uint8_t m_countDown = 3;
 
-
     // --- ゲームオブジェクト関連 ---
     // オブジェクトマネージャー
     ObjManager m_objManager;
@@ -32,6 +31,9 @@ private:
     uint8_t m_hiscore = 0;
     // 勝敗フラグ用
     bool m_p1death = false;
+
+    //星生成用タイマー
+    uint8_t m_starGenTimer = 0;
 
 
 public:
