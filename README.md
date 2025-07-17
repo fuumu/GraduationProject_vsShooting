@@ -213,7 +213,7 @@ server/
         #define SECRET_PASS "your PASS"         //パスワード
         //サーバー
         #define WEBSOCKET_IP "your WebSocket ip"//ipアドレス
-        #define WEBSOCKET_PORT 18080            //ポート番号
+        #define WEBSOCKET_PORT 8080            //ポート番号
         ```
 
 4. **Arduinoへのプログラムの書き込み**
@@ -290,7 +290,7 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 一人プレイ用のモードです。
 このモードではランダムな位置にワープを繰り返す敵に弾を当ててハイスコアを目指します。  
-敵の弾に当たるとプレイヤーの残機が減っていき、0になった状態で弾に当たるとゲームオーバーです。  
+敵の弾に当たるとプレイヤーの残機が減っていき、0になるとゲームオーバーです。  
 時間経過でプレイヤーも敵も発射する弾の数が上昇していきます。  
 ハイスコアは電源を落としても保持されます(ハイスコアを消去したい場合は [スコアのリセット](#スコアのリセット)に記載の手順を行ってください。)  
 
