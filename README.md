@@ -39,7 +39,9 @@
 
 ## 概要
 
-![プレイ動画](https://github.com/nRen28/GraduationProject_vsShooting/blob/ren/img/play_singlemode.mp4)
+<div>
+  <video controls src="https://raw.githubusercontent.com/nRen28/GraduationProject_vsShooting/ren/img/play_singlemode.mp4" muted="false"></video>
+</div>
 
 本プロジェクトは**Arduino UNO R4 WiFi(以降、Arduino)で動作する<ins>対戦型シューティングゲーム**</ins>です。  
 
