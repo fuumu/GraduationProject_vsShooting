@@ -14,6 +14,7 @@ enum SoundType {
   SOUND_WIN,//勝利BGM
   SOUND_POWER_UP,//パワーアップ音
   SOUND_DAMAGE,//ダメージ音
+  SOUND_HIT,//相手に弾が当たった音
   SOUND_SHOT,//弾を撃つ
   SOUND_CURSOR_MOVE,//カーソル移動音
   SOUND_NONE,

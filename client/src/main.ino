@@ -12,7 +12,7 @@
 SceneManager *sceneManager = nullptr;
 
 // タイマー割り込み関連の変数
-FspTimer _timer;
+FspTimer timer;
 volatile bool shouldDraw = false;
 volatile bool gameState = GAME_RUNNING;
 
@@ -63,10 +63,10 @@ void setup()
   {
     return;
   }
-  _timer.begin(TIMER_MODE_PERIODIC, type, ch, 60.0f, 50.0f, callbackfunc, nullptr);
-  _timer.setup_overflow_irq(15, nullptr);
-  _timer.open();
-  _timer.start();
+  timer.begin(TIMER_MODE_PERIODIC, type, ch, 60.0f, 50.0f, callbackfunc, nullptr);
+  timer.setup_overflow_irq(15, nullptr);
+  timer.open();
+  timer.start();
 }
 
 //==============================================================================

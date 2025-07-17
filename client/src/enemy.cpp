@@ -73,6 +73,8 @@ void Enemy::action()
     if (isHitByEnemyBullet())
     {
         m_hitCount++;
+        // ヒット音
+        sound.playSound(SOUND_HIT);
     }
 }
 

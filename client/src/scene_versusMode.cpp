@@ -36,8 +36,8 @@ VersusMode::VersusMode(SceneManager *p) : SceneBase(p)
     m_countDown = 3 + 1;
     m_timer = 60;
 
-    m_p1Life = 2;
-    m_p2Life = 2;
+    m_p1Life = 3;
+    m_p2Life = 3;
     m_p1win = false;
     m_p2win = false;
 
@@ -154,7 +154,6 @@ int VersusMode::update()
         {
             // 結果画面へ
             m_gameState = STATE_RESULT;
-            wsClient->disconnect();
             m_shouldCommunicate = false;
             if (m_p1win)
             {
@@ -174,6 +173,7 @@ int VersusMode::update()
         if (digitalRead(BUTTON_A) == HIGH)
         {
             sound.stopSound();
+            wsClient->disconnect();
             sceneManager->deleteScene();
             sceneManager->currentScene = new Title(sceneManager);
         }
@@ -357,6 +357,12 @@ void VersusMode::communicate()
         // データの送受信
         receivePlayer2Data();
         sendPlayer1Data();
+
+        //接続チェック
+        if(!wsClient->isConnected())
+        {
+            connectionError();
+        }
         break;
     // 結果画面
     case STATE_RESULT:
@@ -368,6 +374,7 @@ void VersusMode::communicate()
 void VersusMode::connectionError()
 {
     display.clearDisplay();
+    display.setTextSize(1);
     display.setCursor(0, 20);
     display.print("Connection error!");
     display.setCursor(0, 35);
@@ -422,8 +429,14 @@ void VersusMode::receivePlayer2Data()
                     // プレイヤー2の座標を更新（左右反転）
                     ptr_obj->m_pos.x = SCREEN_WIDTH - x - ptr_obj->m_width;
                     ptr_obj->m_pos.y = y;
-                    // 残機を更新
-                    ((Player *)ptr_obj)->set_life(life);
+
+                    // 残機が減っていたら効果音を鳴らす
+                    if (((Player *)ptr_obj)->get_life() > life)
+                    {
+                        sound.playSound(SOUND_HIT);
+                        // 残機を更新
+                        ((Player *)ptr_obj)->set_life(life);
+                    }
                 }
             }
             break;

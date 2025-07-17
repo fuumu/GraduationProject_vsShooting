@@ -25,7 +25,7 @@ private:
 
     // --- プレイヤー情報・スコア・勝敗関連 ---
     // 画面に表示するプレイヤーの残機数
-    uint8_t m_p1Life = 2;
+    uint8_t m_p1Life = 3;
     // シングルプレイヤーモードで表示するスコア
     uint8_t m_score = 0;
     uint8_t m_hiscore = 0;

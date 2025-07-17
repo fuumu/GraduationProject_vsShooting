@@ -225,6 +225,17 @@ void SoundManager::setMelody(SoundType type)
     melodyLength = sizeof(melody) / sizeof(melody[0]);
     break;
   }
+  //相手に弾が当たった音
+  case SOUND_HIT:
+  {
+    static int melody[] = {NOTE_FS5, NOTE_B5};
+    static int durations[] = {16, 16};
+
+    currentMelody = melody;
+    currentDurations = durations;
+    melodyLength = sizeof(melody) / sizeof(melody[0]);
+    break;
+  }
   //ダメージ音
   case SOUND_DAMAGE:
   {

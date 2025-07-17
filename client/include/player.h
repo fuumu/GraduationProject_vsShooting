@@ -26,7 +26,7 @@ private:
     //時間経過で発射する弾の数を増やすためのタイマー
     uint16_t m_powerUpTimer = 0;
     //プレイヤーの残機
-    uint8_t m_life = 2;
+    uint8_t m_life = 3;
     //相手プレイヤーの弾のID
     uint8_t m_enemyBulletId = 0;
 };

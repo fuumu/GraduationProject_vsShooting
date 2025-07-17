@@ -26,7 +26,7 @@ SingleMode::SingleMode(SceneManager *p) : SceneBase(p)
     m_timer = 60;
 
     m_score = 0;
-    m_p1Life = 2;
+    m_p1Life = 3;
     m_p1death = false;
 
     // プレイヤーとエネミー生成

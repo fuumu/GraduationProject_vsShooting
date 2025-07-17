@@ -50,8 +50,8 @@ private:
 
     // --- プレイヤー情報・勝敗関連 ---
     // 画面に表示するプレイヤーの残機数
-    uint8_t m_p1Life = 2;
-    uint8_t m_p2Life = 2;
+    uint8_t m_p1Life = 3;
+    uint8_t m_p2Life = 3;
 
     // 勝敗フラグ
     bool m_p1win = false;

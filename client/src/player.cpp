@@ -106,7 +106,7 @@ void Player::action()
     {
         m_bulletCount++;
         m_powerUpTimer = 0;
-        //パワーアップ音
+        // パワーアップ音
         sound.playSound(SOUND_POWER_UP);
     }
 
@@ -139,19 +139,22 @@ void Player::action()
     m_pos.x += m_vec.x;
     m_pos.y += m_vec.y;
 
-    // 弾と当たったら残機を減らす
+    // 弾と当たったとき
     if (isHitByEnemyBullet())
     {
-        if (m_life == 0)
-        {
-            m_isAlive = false;
-        }
-        else
+        // 残機を減らす
+        if (m_id == PLAYER1)
         {
             m_life--;
-            //ダメージ音
+            // ダメージ音
             sound.playSound(SOUND_DAMAGE);
         }
+    }
+
+    // 残機が0なら死ぬ
+    if (m_life == 0)
+    {
+        m_isAlive = false;
     }
 }
 

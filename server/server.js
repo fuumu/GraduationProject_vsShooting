@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const PORT = 8080;
+const PORT = 8080;// 他のアプリと競合する場合や環境で固定値が必要な場合は適宜変更してください。
 const wss = new WebSocket.Server({ port: PORT });
 
 // クライアント管理
@@ -7,8 +7,14 @@ let client1 = null;
 let client2 = null;
 
 // データ保持用
-let client1Data = { x: 96, y: 32, life: 2 };
-let client2Data = { x: 96, y: 32, life: 2 };
+let client1Data = { x: 96, y: 32, life: 3 };
+let client2Data = { x: 96, y: 32, life: 3 };
+
+//タイムアウトチェック用
+let client1Timeout = null;
+let client2Timeout = null;
+//3秒
+const TIMEOUT_MS = 3000;
 
 // 定数
 const WAITING_LIFE = 255;
@@ -27,11 +33,13 @@ wss.on('connection', (ws, req) => {
         console.log(`client1接続: ${ip}`);
         isMatched = false;
         sendWaitingToClient(client1);
+        resetTimeout(client1, 'client1');
     } else if (!client2) {
         client2 = ws;
         console.log(`client2接続: ${ip}`);
         isMatched = true;
         sendInitialData();
+        resetTimeout(client2, 'client2');
     } else {
         console.log(`接続拒否（満員）: ${ip}`);
         ws.close(1000, 'サーバー満員');
@@ -40,6 +48,14 @@ wss.on('connection', (ws, req) => {
 
     //送信処理
     ws.on('message', (data) => {
+
+        // マッチング中のときだけタイマーをリセットする
+        if (ws === client1) {
+            resetTimeout(ws, 'client1');
+        } else if (ws === client2) {
+            resetTimeout(ws, 'client2');
+        }
+
         if (data.length >= 3) {
             const x = data[0];
             const y = data[1];
@@ -71,60 +87,36 @@ wss.on('connection', (ws, req) => {
         }
     });
 
-    // //デバッグ用送信処理
-    // ws.on('message', (data) => {
-    //     if (data.length >= 3) {
-    //         const x = data[0];
-    //         const y = data[1];
-    //         const life = data[2];
-
-    //         if (ws === client1) {
-    //             client1Data = { x, y, life };
-
-    //             if (isMatched) {
-    //                 if (client2 && client2.readyState === WebSocket.OPEN) {
-    //                     client2.send(Buffer.from([x, y, life]));
-    //                 }
-    //             } else {
-    //                 //client1のデータをそのまま自分に送り返す
-    //                 const debugBuffer = Buffer.from([x, y, life]);
-    //                 ws.send(debugBuffer);
-    //             }
-    //         }
-    //         else if (ws === client2) {
-    //             client2Data = { x, y, life };
-
-    //             if (client1 && client1.readyState === WebSocket.OPEN) {
-    //                 client1.send(Buffer.from([x, y, life]));
-    //             }
-    //         }
-    //     }
-    // });
-
     ws.on('close', () => {
         if (ws === client1) {
             console.log('client1が切断されました');
+            clearTimeout(client1Timeout);
             client1 = null;
-            client1Data = { x: 96, y: 32, life: 2 };
+            client1Data = { x: 96, y: 32, life: 3 };
+
+            // client2 がいれば通知＆切断
+            if (client2 && client2.readyState === WebSocket.OPEN) {
+                client2.terminate();
+            }
+            client2 = null;
+            client2Data = { x: 96, y: 32, life: 3 };
         } else if (ws === client2) {
             console.log('client2が切断されました');
+            clearTimeout(client2Timeout);
             client2 = null;
-            client2Data = { x: 96, y: 32, life: 2 };
+            client2Data = { x: 96, y: 32, life: 3 };
+
+            if (client1 && client1.readyState === WebSocket.OPEN) {
+                client1.terminate();
+            }
+            client1 = null;
+            client1Data = { x: 96, y: 32, life: 3 };
         }
 
-        // マッチング状態を再判定
-        isMatched = (client1 && client2);
-
-        // 待機中の場合、client1に通知
-        if (client1 && !isMatched) {
-            sendWaitingToClient(client1);
-        }
-    });
-
-    ws.on('error', (err) => {
-        console.error(`WebSocketエラー: ${err}`);
+        isMatched = false;
     });
 });
+
 
 // client1 に life=255 の「待機中」を通知
 function sendWaitingToClient(client) {
@@ -133,6 +125,20 @@ function sendWaitingToClient(client) {
         client.send(buffer);
         console.log('client1に「待機中」通知（life=255）');
     }
+}
+
+//messageイベント内で呼び出す
+function resetTimeout(client, which) {
+    const timeoutVar = which === 'client1' ? 'client1Timeout' : 'client2Timeout';
+
+    if (global[timeoutVar]) {
+        clearTimeout(global[timeoutVar]);
+    }
+
+    global[timeoutVar] = setTimeout(() => {
+        console.log(`${which} 応答なしにより切断`);
+        client.terminate(); // 明示的に切断
+    }, TIMEOUT_MS);
 }
 
 // マッチング成立時、双方に初期データを送信
