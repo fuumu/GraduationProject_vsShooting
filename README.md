@@ -1,6 +1,7 @@
 # 卒業制作 2025
 
-![タイトルロゴ](./img/shooting_logo.png)
+[![alt設定](./img/shooting_logo.png)](https://www.youtube.com/watch?v=dEpHeHFJRXU)  
+*プレイ動画(画像をクリックするとYouTubeに飛びます)*
 
 ## 目次
 
@@ -38,8 +39,6 @@
 - [参考](#参考)
 
 ## 概要
-
-[![alt設定](./img/shooting_logo.png)](https://www.youtube.com/watch?v=dEpHeHFJRXU)
 
 本プロジェクトは**Arduino UNO R4 WiFi(以降、Arduino)で動作する<ins>対戦型シューティングゲーム**</ins>です。  
 
