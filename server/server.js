@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-const PORT = 8080;// 他のアプリと競合する場合や環境で固定値が必要な場合は適宜変更してください。
+const PORT = 18080;// 他のアプリと競合する場合や環境で固定値が必要な場合は適宜変更してください。
 const wss = new WebSocket.Server({ port: PORT });
 
 // クライアント管理
@@ -13,16 +13,28 @@ let client2Data = { x: 96, y: 32, life: 3 };
 //タイムアウトチェック用
 let client1Timeout = null;
 let client2Timeout = null;
-//3秒
-const TIMEOUT_MS = 3000;
+//10秒
+const TIMEOUT_MS = 10000;
 
 // 定数
 const WAITING_LIFE = 255;
 
 // マッチング状態
 let isMatched = false;
+let matchStartTime = null;
 
-console.log(`WebSocketサーバー起動: ws://localhost:${PORT}`);
+
+// ログ出力用ヘルパー関数
+function log(message) {
+    if (matchStartTime) {
+        const elapsedTime = ((Date.now() - matchStartTime) / 1000).toFixed(3);
+        console.log(`[${elapsedTime}s] ${message}`);
+    } else {
+        console.log(message);
+    }
+}
+
+log(`WebSocketサーバー起動: ws://localhost:${PORT}`);
 
 wss.on('connection', (ws, req) => {
     const ip = req.socket.remoteAddress;
@@ -30,18 +42,19 @@ wss.on('connection', (ws, req) => {
     // クライアント割り当て
     if (!client1) {
         client1 = ws;
-        console.log(`client1接続: ${ip}`);
+        log(`client1接続: ${ip}`);
         isMatched = false;
         sendWaitingToClient(client1);
         resetTimeout(client1, 'client1');
     } else if (!client2) {
         client2 = ws;
-        console.log(`client2接続: ${ip}`);
         isMatched = true;
+        matchStartTime = Date.now();
+        log(`client2接続: ${ip}`);
         sendInitialData();
         resetTimeout(client2, 'client2');
     } else {
-        console.log(`接続拒否（満員）: ${ip}`);
+        log(`接続拒否（満員）: ${ip}`);
         ws.close(1000, 'サーバー満員');
         return;
     }
@@ -62,7 +75,7 @@ wss.on('connection', (ws, req) => {
             const life = data[2];
 
             const sender = ws === client1 ? 'client1' : 'client2';
-            console.log(`${sender} からデータ受信: x=${x}, y=${y}, life=${life}`);
+            log(`${sender} からデータ受信: x=${x}, y=${y}, life=${life}`);
 
             // データを記録
             if (ws === client1) {
@@ -89,7 +102,7 @@ wss.on('connection', (ws, req) => {
 
     ws.on('close', () => {
         if (ws === client1) {
-            console.log('client1が切断されました');
+            log('client1が切断されました');
             clearTimeout(client1Timeout);
             client1 = null;
             client1Data = { x: 96, y: 32, life: 3 };
@@ -101,7 +114,7 @@ wss.on('connection', (ws, req) => {
             client2 = null;
             client2Data = { x: 96, y: 32, life: 3 };
         } else if (ws === client2) {
-            console.log('client2が切断されました');
+            log('client2が切断されました');
             clearTimeout(client2Timeout);
             client2 = null;
             client2Data = { x: 96, y: 32, life: 3 };
@@ -114,6 +127,7 @@ wss.on('connection', (ws, req) => {
         }
 
         isMatched = false;
+        matchStartTime = null;
     });
 });
 
@@ -123,7 +137,7 @@ function sendWaitingToClient(client) {
     if (client && client.readyState === WebSocket.OPEN) {
         const buffer = Buffer.from([client2Data.x, client2Data.y, WAITING_LIFE]);
         client.send(buffer);
-        console.log('client1に「待機中」通知（life=255）');
+        log('client1に「待機中」通知（life=255）');
     }
 }
 
@@ -136,7 +150,7 @@ function resetTimeout(client, which) {
     }
 
     global[timeoutVar] = setTimeout(() => {
-        console.log(`${which} 応答なしにより切断`);
+        log(`${which} 応答なしにより切断`);
         client.terminate(); // 明示的に切断
     }, TIMEOUT_MS);
 }
