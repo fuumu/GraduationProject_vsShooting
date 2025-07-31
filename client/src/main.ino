@@ -82,12 +82,12 @@ void loop()
     sceneManager->drawScene(); // シーンの描画
     display.display();         // 画面を更新
     shouldDraw = false;
-  }
-  //サウンド更新処理
-  sound.update();
 
-  // 通信処理（通信しないシーンなら何も起きない）
-  sceneManager->communicateScene();
+    // 通信処理（通信しないシーンなら何も起きない）
+    sceneManager->communicateScene();
+  }
+  // サウンド更新処理
+  sound.update();
 }
 
 //==============================================================================
