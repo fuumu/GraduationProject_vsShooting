@@ -358,8 +358,8 @@ void VersusMode::communicate()
         receivePlayer2Data();
         sendPlayer1Data();
 
-        //接続チェック
-        if(!wsClient->isConnected())
+        // 接続チェック
+        if (!wsClient->isConnected())
         {
             connectionError();
         }
@@ -390,16 +390,26 @@ void VersusMode::connectionError()
 // プレイヤー1のデータを送信する関数
 void VersusMode::sendPlayer1Data()
 {
+    // 座標の重複送信防止のため、プレイヤーの座標が変化したときに座標を送信
     for (int i = 0; i < MAX_OBJ; i++)
     {
         ObjBase *ptr_obj = m_objManager.getObjPtr(i);
         if (ptr_obj != nullptr && ptr_obj->m_id == PLAYER1)
         {
-            Serial.println("送信します");
-            wsClient->sendData((uint8_t)ptr_obj->m_pos.x, (uint8_t)ptr_obj->m_pos.y, ((Player *)ptr_obj)->get_life());
-            break;
+            //座標が変化したときに加え、１秒間座標が変化しなかった場合でも、通信のタイムアウト防止に送信する。
+            if (m_p1prevPos.x != ptr_obj->m_pos.x && m_p1prevPos.y != ptr_obj->m_pos.y
+            || m_idleTimer > 1000)
+            {
+                Serial.println("送信します");
+                wsClient->sendData((uint8_t)ptr_obj->m_pos.x, (uint8_t)ptr_obj->m_pos.y, ((Player *)ptr_obj)->get_life());
+                m_idleTimer = 0;
+                m_p1prevPos = ptr_obj->m_pos;
+                break;
+            }
+            m_p1prevPos = ptr_obj->m_pos;
         }
     }
+    m_idleTimer++;
 }
 
 // プレイヤー2のデータを受信して反映する関数

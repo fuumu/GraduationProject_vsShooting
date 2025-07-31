@@ -23,6 +23,10 @@ private:
     // 通信制御フラグ
     bool m_shouldCommunicate{true};
 
+    //プレイヤーが移動していないときの重複送信を防ぐための変数
+    Pos m_p1prevPos{0.0};
+    int m_idleTimer{0};
+
 
     // --- ゲーム状態関連 ---
     // ゲームの状態
