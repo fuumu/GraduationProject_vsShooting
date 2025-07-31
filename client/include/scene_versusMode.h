@@ -26,7 +26,7 @@ private:
     //プレイヤーが移動していないときの重複送信を防ぐための変数
     Pos m_p1prevPos{0.0};
     int m_idleTimer{0};
-
+    uint8_t m_p1prevlife{0};//HPに変化があった場合は即座に送信する
 
     // --- ゲーム状態関連 ---
     // ゲームの状態

@@ -147,6 +147,8 @@ int VersusMode::update()
                 {
                     m_p2Life = ((Player *)m_objManager.getObjPtr(i))->get_life();
                     m_p1win = false;
+                    //通信を切断
+                    m_shouldCommunicate = false;
                 }
             }
         }
@@ -154,7 +156,6 @@ int VersusMode::update()
         {
             // 結果画面へ
             m_gameState = STATE_RESULT;
-            m_shouldCommunicate = false;
             if (m_p1win)
             {
                 // 勝利BGM
@@ -170,7 +171,7 @@ int VersusMode::update()
     // 結果画面
     case STATE_RESULT:
         // タイトルに戻る
-        if (digitalRead(BUTTON_A) == HIGH)
+        if (digitalRead(BUTTON_A) == HIGH && !m_shouldCommunicate)//通信が切断されている状態ならタイトルに戻れる
         {
             sound.stopSound();
             wsClient->disconnect();
@@ -395,25 +396,31 @@ void VersusMode::sendPlayer1Data()
         ObjBase *ptr_obj = m_objManager.getObjPtr(i);
         if (ptr_obj != nullptr && ptr_obj->m_id == PLAYER1)
         {
-            bool positionChanged = (
-                m_p1prevPos.x != ptr_obj->m_pos.x ||
-                m_p1prevPos.y != ptr_obj->m_pos.y
-            );
+            bool positionChanged = (m_p1prevPos.x != ptr_obj->m_pos.x ||
+                                    m_p1prevPos.y != ptr_obj->m_pos.y);
 
-            // 座標が変化した or 10フレームに1回送る
-            if (positionChanged || (m_idleTimer % 10 == 0))
+            bool lifeChanged = m_p1prevlife != ((Player *)ptr_obj)->get_life();
+
+            // 座標が変化した or ライフが変化した or 10フレームに1回送信
+            if (positionChanged || lifeChanged || (m_idleTimer % 10 == 0))
             {
                 Serial.println("送信します");
                 wsClient->sendData(
                     (uint8_t)ptr_obj->m_pos.x,
                     (uint8_t)ptr_obj->m_pos.y,
-                    ((Player *)ptr_obj)->get_life()
-                );
+                    ((Player *)ptr_obj)->get_life());
                 m_p1prevPos = ptr_obj->m_pos;
 
                 // 座標が変わっていたらリセット
-                if (positionChanged) {
+                if (positionChanged)
+                {
                     m_idleTimer = 0;
+                }
+
+                // 自分が死んでることを相手に送信してから通信を切断
+                if(((Player *)ptr_obj)->get_life() == 0)
+                {
+                    m_shouldCommunicate = false;
                 }
                 break;
             }
